@@ -5,10 +5,41 @@ from flask_socketio import SocketIO, emit
 
 
 APP_NAME = "LivePad Relay"
-APP_VERSION = "0.3"
+APP_VERSION = "0.4"
 
+
+# =========================================================
+# APP
+# =========================================================
 
 app = Flask(__name__)
+
+
+# =========================================================
+# CORS
+# =========================================================
+
+@app.after_request
+def add_cors_headers(response):
+
+    response.headers[
+        "Access-Control-Allow-Origin"
+    ] = "*"
+
+    response.headers[
+        "Access-Control-Allow-Headers"
+    ] = "Content-Type"
+
+    response.headers[
+        "Access-Control-Allow-Methods"
+    ] = "GET, OPTIONS"
+
+    return response
+
+
+# =========================================================
+# SOCKET.IO
+# =========================================================
 
 socketio = SocketIO(
     app,
@@ -16,6 +47,10 @@ socketio = SocketIO(
     async_mode="gevent"
 )
 
+
+# =========================================================
+# COMPANIONS
+# =========================================================
 
 # pairing_code -> socket id
 companions = {}
@@ -35,7 +70,8 @@ def home():
         "ok": True,
         "app": APP_NAME,
         "version": APP_VERSION,
-        "companions_online": len(companions)
+        "companions_online":
+            len(companions)
     })
 
 
@@ -84,12 +120,15 @@ def handle_connect():
         "relay_ready",
         {
             "ok": True,
-            "version": APP_VERSION
+            "version":
+                APP_VERSION
         }
     )
 
 
-@socketio.on("companion_register")
+@socketio.on(
+    "companion_register"
+)
 def handle_companion_register(
     data
 ):

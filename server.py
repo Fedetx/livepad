@@ -5,7 +5,7 @@ from flask_socketio import SocketIO, emit
 
 
 APP_NAME = "LivePad Relay"
-APP_VERSION = "0.2"
+APP_VERSION = "0.3"
 
 
 app = Flask(__name__)
@@ -24,6 +24,10 @@ companions = {}
 socket_companions = {}
 
 
+# =========================================================
+# HTTP
+# =========================================================
+
 @app.route("/")
 def home():
 
@@ -35,6 +39,38 @@ def home():
     })
 
 
+@app.route(
+    "/api/companion/<pairing_code>/status"
+)
+def companion_status(
+    pairing_code
+):
+
+    pairing_code = (
+        str(pairing_code)
+        .strip()
+        .upper()
+    )
+
+
+    socket_id = companions.get(
+        pairing_code
+    )
+
+
+    return jsonify({
+        "ok": True,
+        "pairing_code":
+            pairing_code,
+        "online":
+            socket_id is not None
+    })
+
+
+# =========================================================
+# SOCKET EVENTS
+# =========================================================
+
 @socketio.on("connect")
 def handle_connect():
 
@@ -42,6 +78,7 @@ def handle_connect():
         "[RELAY] Cliente conectado:",
         request.sid
     )
+
 
     emit(
         "relay_ready",
@@ -53,9 +90,12 @@ def handle_connect():
 
 
 @socketio.on("companion_register")
-def handle_companion_register(data):
+def handle_companion_register(
+    data
+):
 
     data = data or {}
+
 
     pairing_code = str(
         data.get(
@@ -79,11 +119,10 @@ def handle_companion_register(data):
         return
 
 
-    # Si ya había otro socket usando
-    # ese código, reemplazamos la sesión.
     old_socket = companions.get(
         pairing_code
     )
+
 
     if old_socket:
 
@@ -96,6 +135,7 @@ def handle_companion_register(data):
     companions[
         pairing_code
     ] = request.sid
+
 
     socket_companions[
         request.sid
@@ -123,6 +163,7 @@ def handle_disconnect():
 
     socket_id = request.sid
 
+
     pairing_code = (
         socket_companions.pop(
             socket_id,
@@ -133,11 +174,18 @@ def handle_disconnect():
 
     if pairing_code:
 
-        current_socket = companions.get(
-            pairing_code
+        current_socket = (
+            companions.get(
+                pairing_code
+            )
         )
 
-        if current_socket == socket_id:
+
+        if (
+            current_socket
+            ==
+            socket_id
+        ):
 
             companions.pop(
                 pairing_code,
@@ -150,6 +198,7 @@ def handle_disconnect():
             pairing_code
         )
 
+
     else:
 
         print(
@@ -157,6 +206,10 @@ def handle_disconnect():
             socket_id
         )
 
+
+# =========================================================
+# MAIN
+# =========================================================
 
 if __name__ == "__main__":
 
